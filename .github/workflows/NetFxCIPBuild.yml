@@ -1,0 +1,26 @@
+name: CI Build Sila
+
+on:
+  push:
+    branches: 
+    - "Master"
+jobs:
+  build:
+
+    runs-on: Sila-server
+
+    steps:
+    - name: Download project if not exists
+      run:  $exists_repo = Test-Path -Path 'SilaJD/Sila'; if(!$exists_repo) { git clone -b development --single-branch git@github.com:it-jd-group/SilaJD.git }
+
+    - name: Download Branch 1
+      run: cd SilaJD; git pull;
+      
+    - name: Set Access
+      run:  net use \\aam-file-server\LibreriasVS /user:${{secrets.USERDLLS}} ${{secrets.PASSDLLS}}; 
+    
+    - name: Download dlls
+      run:  xcopy \\aam-file-server\LibreriasVS\SILAJD D:\actions-runner\_work\SilaJD\SilaJD\SilaJD /s /e /q /y;
+
+    - name: Execute Developer Command Prompt, Build the Solution and Publish the Solution
+      run: cd "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\";  .\Launch-VsDevShell.ps1; cd "D:\actions-runner\_work\SilaJD\SilaJD\SilaJD"; msbuild Sila.sln -t:restore -p:RestorePackagesConfig=true; cd Sila; msbuild /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
